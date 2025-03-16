@@ -39,10 +39,22 @@ services:
     volumes:
       - mailhog:/var/lib/mailhog
 
+  redis-stack:
+    image: redis/redis-stack:latest
+    ports:
+      - '6379:6379'
+      - '8001:8001'
+    volumes:
+      - redis-stack:/var/lib/redis-stack
+    environment:
+      - REDIS_ARGS=--save 900 1
+
 volumes:
   postgres:
     driver: local
   pgadmin:
     driver: local
   mailhog:
+    driver: local
+  redis-stack:
     driver: local

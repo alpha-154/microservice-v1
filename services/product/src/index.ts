@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 import cors from "cors";
 import morgan from "morgan";
 
-import { createProduct, getProducts, getProductDetails } from "./controllers";
+import { createProduct, getProducts, getProductDetails, updateProduct } from "./controllers";
 
 dotenv.config();
 
@@ -20,24 +20,28 @@ app.get("/health", (req, res) => {
 });
 
 // making the product service private to other api calls other than api-gateway service (http://localhost:8081)
-app.use((req, res, next) => {
-  const allowedOrigins = ["http://localhost:8081", "http://127.0.0.1:8081"];
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin!)) {
-    res.setHeader("Access-Control-Allow-Origin", origin!);
-    next();
-  } else {
-    res.status(403).json({ message: "Forbidden!" });
-  }
-});
+// app.use((req, res, next) => {
+//   const allowedOrigins = ["http://localhost:8081", "http://127.0.0.1:8081"];
+//   const origin = req.headers.origin;
+//   if (allowedOrigins.includes(origin!)) {
+//     res.setHeader("Access-Control-Allow-Origin", origin!);
+//     next();
+//   } else {
+//     res.status(403).json({ message: "Forbidden!" });
+//   }
+// });
 
 
 // routes
-app.get("/products", (req, res, next) => {
-  getProducts(req, res, next);
-});
+
 app.get("/products/:id", (req, res, next) => {
   getProductDetails(req, res, next);
+});
+app.put("/products/:id", (req, res, next) => {
+  updateProduct(req, res, next);
+})
+app.get("/products", (req, res, next) => {
+  getProducts(req, res, next);
 });
 app.post("/products", (req, res, next) => {
   createProduct(req, res, next);

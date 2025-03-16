@@ -2,14 +2,8 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import morgan from "morgan";
-
-import {
-  createInventory,
-  updateInventory,
-  getInventoryById,
-  getInventoryDetails,
-} from "./controllers";
-
+import { addToCart, clearCart, getMyCart } from "./controllers";
+import "./events/onKeyExpires";
 dotenv.config();
 
 const app = express();
@@ -26,12 +20,7 @@ app.get("/health", (req, res) => {
 
 // making the product service private to other api calls other than api-gateway service (http://localhost:8081)
 // app.use((req, res, next) => {
-//   const allowedOrigins = [
-//     "http://localhost:8081",
-//     "http://localhost:4001",
-//     "http://localhost:4006",
-//     "http://127.0.0.1:8081",
-//   ];
+//   const allowedOrigins = ["http://localhost:8081", "http://127.0.0.1:8081"];
 //   const origin = req.headers.origin;
 //   if (allowedOrigins.includes(origin!)) {
 //     res.setHeader("Access-Control-Allow-Origin", origin!);
@@ -42,17 +31,14 @@ app.get("/health", (req, res) => {
 // });
 
 // routes
-app.get("/inventories/:id/details", (req, res, next) => {
-  getInventoryDetails(req, res, next);
+app.post("/cart/add-to-cart", (req, res, next) => {
+  addToCart(req, res, next);
 });
-app.get("/inventories/:id", (req, res, next) => {
-  getInventoryById(req, res, next);
+app.get("/cart/get-my-cart", (req, res, next) => {
+  getMyCart(req, res, next);
 });
-app.put("/inventories/:id", (req, res, next) => {
-  updateInventory(req, res, next);
-});
-app.post("/inventories", (req, res, next) => {
-  createInventory(req, res, next);
+app.get("/cart/clear-cart", (req, res, next) => {
+  clearCart(req, res, next);
 });
 
 // 404 handler
@@ -70,9 +56,9 @@ app.use((err, _req, res, _next) => {
   });
 });
 
-const port = process.env.PORT || 4002;
+const port = process.env.PORT || 4006;
 
-const serviceName = process.env.SERVICE_NAME || "Inventory-Service";
+const serviceName = process.env.SERVICE_NAME || "Cart-Service";
 
 app.listen(port, () => {
   console.log(`Service ${serviceName} running on port ${port} 🚀`);

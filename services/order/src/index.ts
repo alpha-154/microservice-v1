@@ -2,13 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import morgan from "morgan";
-
-import {
-  createInventory,
-  updateInventory,
-  getInventoryById,
-  getInventoryDetails,
-} from "./controllers";
+import { checkout, getOrderById, getOrders } from "./controllers";
 
 dotenv.config();
 
@@ -42,19 +36,15 @@ app.get("/health", (req, res) => {
 // });
 
 // routes
-app.get("/inventories/:id/details", (req, res, next) => {
-  getInventoryDetails(req, res, next);
-});
-app.get("/inventories/:id", (req, res, next) => {
-  getInventoryById(req, res, next);
-});
-app.put("/inventories/:id", (req, res, next) => {
-  updateInventory(req, res, next);
-});
-app.post("/inventories", (req, res, next) => {
-  createInventory(req, res, next);
-});
-
+app.post("/orders/checkout", (req, res, next) => {
+  checkout(req, res, next);
+})
+app.get("/orders/:id", (req, res, next) => {
+  getOrderById(req, res, next);
+})
+app.get("/orders", (req, res, next) => {
+  getOrders(req, res, next);
+})
 // 404 handler
 app.use((_req, res) => {
   res.status(404).json({
@@ -72,7 +62,7 @@ app.use((err, _req, res, _next) => {
 
 const port = process.env.PORT || 4002;
 
-const serviceName = process.env.SERVICE_NAME || "Inventory-Service";
+const serviceName = process.env.SERVICE_NAME || "Order-Service";
 
 app.listen(port, () => {
   console.log(`Service ${serviceName} running on port ${port} 🚀`);
