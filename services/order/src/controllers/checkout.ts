@@ -9,12 +9,13 @@
 // Sends a confirmation email
 // Returns the created order
 
-import { CART_SERVICE, EMAIL_SERVICE, PRODUCT_SERVICE } from '@/config';
-import prisma from '@/prisma';
-import { CartItemSchema, OrderCreateDTOSchema } from '@/schemas';
-import axios from 'axios';  // 55.7k (gzipped: 20.5k)
-import { Request, Response, NextFunction } from 'express';
-import { z } from 'zod';  // 53.9k (gzipped: 12.8k)
+import { CART_SERVICE, EMAIL_SERVICE, PRODUCT_SERVICE } from "@/config";
+import prisma from "@/prisma";
+import { CartItemSchema, OrderCreateDTOSchema } from "@/schemas";
+import axios from "axios"; // 55.7k (gzipped: 20.5k)
+import { Request, Response, NextFunction } from "express";
+import { z } from "zod"; // 53.9k (gzipped: 12.8k)
+import sendToQueue from "./queue";
 
 const checkout = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -25,11 +26,14 @@ const checkout = async (req: Request, res: Response, next: NextFunction) => {
     }
 
     // get cart details
-    const { data: cartData } = await axios.get(`${CART_SERVICE}/cart/get-my-cart`, {
-      headers: {
-        'x-cart-session-id': parsedBody.data.cartSessionId,
-      },
-    });
+    const { data: cartData } = await axios.get(
+      `${CART_SERVICE}/cart/get-my-cart`,
+      {
+        headers: {
+          "x-cart-session-id": parsedBody.data.cartSessionId,
+        },
+      }
+    );
     console.log("cartdata", cartData);
 
     const cartItems = z.array(CartItemSchema).safeParse(cartData.data);
@@ -40,7 +44,7 @@ const checkout = async (req: Request, res: Response, next: NextFunction) => {
     }
 
     if (cartItems.data.length === 0) {
-      return res.status(400).json({ message: 'Cart is empty' });
+      return res.status(400).json({ message: "Cart is empty" });
     }
 
     // get product details from cart items
@@ -84,27 +88,39 @@ const checkout = async (req: Request, res: Response, next: NextFunction) => {
         },
       },
     });
+    console.log("order created: ", order);
+    // **************** Now these following steps are done in the queue*************////
+    // // clear cart
+    // await axios.get(`${CART_SERVICE}/cart/clear-cart`, {
+    //   headers: {
+    //     "x-cart-session-id": parsedBody.data.cartSessionId,
+    //   },
+    // });
+    // console.log("reacheed email");
 
-    // clear cart
-    await axios.get(`${CART_SERVICE}/cart/clear-cart`, {
-      headers: {
-        'x-cart-session-id': parsedBody.data.cartSessionId,
-      },
-    });
-console.log("reacheed email")
     // send email
-    await axios.post(`${EMAIL_SERVICE}/emails/send`, {
-      recipient: parsedBody.data.userEmail,
-      subject: 'Order Confirmation',
-      body: `Thank you for your order. Your order id is ${order.id}. Your order total is $${grandTotal}`,
-      source: 'Checkout',
-    });
+    // await axios.post(`${EMAIL_SERVICE}/emails/send`, {
+    //   recipient: parsedBody.data.userEmail,
+    //   subject: "Order Confirmation",
+    //   body: `Thank you for your order. Your order id is ${order.id}. Your order total is $${grandTotal}`,
+    //   source: "Checkout",
+    // });
+
+    // ******************** end ******************//////
+    // send to queue
+    sendToQueue("send-email", JSON.stringify(order));
+    sendToQueue(
+      "clear-cart",
+      JSON.stringify({ cartSessionId: parsedBody.data.cartSessionId })
+    );
 
     return res.status(201).json(order);
   } catch (error) {
     // Note: The catch block opening was visible but the content wasn't shown in the images
     // I'm adding a typical error handler based on the pattern used elsewhere
-    return res.status(500).json({ message: 'An error occurred during checkout' });
+    return res
+      .status(500)
+      .json({ message: "An error occurred during checkout" });
   }
 };
 
